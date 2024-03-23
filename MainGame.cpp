@@ -8,7 +8,8 @@
 MainGame::MainGame()
 	:m_screen_width{ 1024 },
 	m_screen_height{768},
-	m_fps{ 0 }
+	m_fps{ 0 },
+	m_player{nullptr}
 {
 }
 
@@ -24,6 +25,8 @@ void MainGame::run()
 {
 	initSystems();
 
+	initLevel();
+
 	gameLoop();
 }
 
@@ -32,13 +35,26 @@ void MainGame::initSystems()
 	TRXEngine::init();
 
 	m_window.create("ZombieGame", m_screen_width, m_screen_height, 0);
+	// change background color to light gray
+	glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
 
 	m_camera.init(m_screen_width, m_screen_height);
 
 	initShaders();
 
-	m_levels.push_back(new Level("Levels/level1.txt"));
+	m_agent_sprite_batch.init();
+}
+
+void MainGame::initLevel()
+{
+	// level 1
+	m_levels.push_back(new Level("Levels/level2.txt"));
 	m_current_level = m_levels.back();
+
+	m_player = new Player();
+	m_player->init(4.0f, m_current_level->getPlayerStartPosition(),&m_input_manager);
+
+	m_humans.push_back(m_player);
 }
 
 void MainGame::initShaders()
@@ -53,20 +69,53 @@ void MainGame::initShaders()
 
 void MainGame::gameLoop()
 {
-	TRXEngine::FpsLimiter fps_limiter{};
-	fps_limiter.setMaxFPS(60.0f);
+	// do not want to output fps every frame so use these two values to determine when to print out fps
+	//int total_frames{ 0 };
+	//int FPS_PRINT_FREQ{ 60 };
+
+	//TRXEngine::FpsLimiter fps_limiter{};
+	//fps_limiter.setMaxFPS(1000.0f);
 
 	while (m_game_state == GAME_STATE::PLAY)
 	{
-		fps_limiter.begin();
+		//fps_limiter.begin();
 
 		processInput();
+
+		updateAgents();
+
+		// update camera position
+		m_camera.setPosition(m_player->getPosition());
 		m_camera.update();
+
 
 		drawGame();
 
-		m_fps = fps_limiter.end();
+		//m_fps = fps_limiter.end();
+
+		// print fps ever FPS_PRINT_FREQ frames
+		//if (total_frames % FPS_PRINT_FREQ == 0)
+		//{
+		//	std::cout << "FPS: " << m_fps << '\n';
+		//	// prevent potential overflow
+		//	if (total_frames >= FPS_PRINT_FREQ)
+		//	{
+		//		total_frames = 0;
+		//	}
+		//}
+		//total_frames++;
 	}
+}
+
+void MainGame::updateAgents()
+{
+	// update all humans
+	for (Human* human : m_humans)
+	{
+		human->update(m_current_level->getLevelData(),m_humans,m_zombies);
+	}
+
+	// dont forget to update zombies
 }
 
 void MainGame::processInput()
@@ -121,6 +170,14 @@ void MainGame::drawGame()
 	glUniformMatrix4fv(p_uniform, 1, GL_FALSE, &projection_matrix[0][0]);
 
 	m_current_level->draw();
+
+	m_agent_sprite_batch.begin();
+	for (Human* human : m_humans)
+	{
+		human->draw(m_agent_sprite_batch);
+	}
+	m_agent_sprite_batch.end();
+	m_agent_sprite_batch.renderBatch();
 
 	m_texture_program.unuse();
 

@@ -82,10 +82,12 @@ Level::Level(const std::string& file_name)
 				break;
 
 			case '@':
-				m_player_start_pos = { x,y };
+				m_level_data[y][x] = '.'; /// < reset char value so that collisions are not detected with the '@' sign
+				m_player_start_pos = { x*TILE_WIDTH,y*TILE_WIDTH };
 				break;
 
 			case 'Z':
+				m_level_data[y][x] = '.'; /// < reset char value so that collisions are not detected with the 'z' sign
 				m_zombie_start_positions.emplace_back(x,y);
 				break;
 			default:
