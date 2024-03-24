@@ -21,6 +21,8 @@ Level::Level(const std::string& file_name)
 	std::string temp{};
 	file >> temp >> m_num_humans;
 
+	std::getline(file, temp); // throw away rest of first line
+
 	while (std::getline(file, temp))
 	{
 		m_level_data.push_back(temp);

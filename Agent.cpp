@@ -46,8 +46,15 @@ void Agent::draw(TRXEngine::SpriteBatch& sprite_batch) const
 
 void Agent::checkTilePosition(const std::vector<std::string>& level_data, std::vector<glm::vec2>& collide_tile_positions, float x, float y)
 {
-	
+
 	glm::vec2 corner_pos{ std::floor(x / static_cast<float>(TILE_WIDTH)),std::floor(y / static_cast<float>(TILE_WIDTH)) };
+
+	// if agent is outside the world return
+	if (corner_pos.x < 0 || corner_pos.x >= level_data[0].size() || corner_pos.y < 0 || corner_pos.y >= level_data.size())
+	{
+		return;
+	}
+
 	// if tile is not empty space
 	if (level_data[static_cast<int>(corner_pos.y)][static_cast<int>(corner_pos.x)] != '.')
 	{

@@ -4,6 +4,7 @@
 #include <TRXEngine/Timing.h>
 
 #include <iostream>
+#include <random>
 
 MainGame::MainGame()
 	:m_screen_width{ 1024 },
@@ -55,6 +56,20 @@ void MainGame::initLevel()
 	m_player->init(4.0f, m_current_level->getPlayerStartPosition(),&m_input_manager);
 
 	m_humans.push_back(m_player);
+
+	std::mt19937 random_engine{ static_cast<unsigned int>(time(nullptr)) };
+	std::uniform_int_distribution<int> rand_x(1, m_current_level->getWidth()-2);
+	std::uniform_int_distribution<int> rand_y(1, m_current_level->getHeight()-2);
+
+	constexpr float HUMAN_SPEED{ 1.0f };
+
+	// add random humans
+	for (int i{ 0 }; i < m_current_level->getNumHumans(); i++)
+	{
+		m_humans.push_back(new Human{});
+		glm::vec2 pos(rand_x(random_engine), rand_y(random_engine));
+		m_humans.back()->init(HUMAN_SPEED, pos * static_cast<float>(TILE_WIDTH));
+	}
 }
 
 void MainGame::initShaders()
