@@ -17,7 +17,7 @@ public:
 	~Level();
 
 	// draw game
-	void draw();
+	void draw(TRXEngine::SpriteBatch& sprite_batch);
 
 	// getters
 	constexpr int getWidth() const { return static_cast<int>(m_level_data[0].size()); }///< assume level is square
@@ -30,8 +30,6 @@ public:
 private:
 	std::vector<std::string> m_level_data{};
 	int m_num_humans{};
-
-	TRXEngine::SpriteBatch m_sprite_batch{};
 
 	glm::vec2 m_player_start_pos{};
 	std::vector<glm::vec2> m_zombie_start_positions{};

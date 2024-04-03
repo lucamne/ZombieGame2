@@ -55,7 +55,7 @@ private:
 
 	TRXEngine::Camera2D m_camera{};
 
-	TRXEngine::SpriteBatch m_agent_sprite_batch{}; ///< sprite batch used for drawing all agents
+	TRXEngine::SpriteBatch m_sprite_batch{}; ///< sprite batch used for drawing all agents
 
 	std::vector<Level*> m_levels{};
 	Level* m_current_level{}; ///< pointer to the currently active level

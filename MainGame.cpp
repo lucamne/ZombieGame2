@@ -1,10 +1,16 @@
 #include "MainGame.h"
+#include "Zombie.h"
 
 #include <TRXEngine/TRXEngine.h>
 #include <TRXEngine/Timing.h>
+#include <TRXEngine/Errors.h>
 
 #include <iostream>
 #include <random>
+
+
+constexpr float HUMAN_SPEED{ 0.5f };
+constexpr float ZOMBIE_SPEED{ 0.8f };
 
 MainGame::MainGame()
 	:m_screen_width{ 1024 },
@@ -43,7 +49,7 @@ void MainGame::initSystems()
 
 	initShaders();
 
-	m_agent_sprite_batch.init();
+	m_sprite_batch.init();
 }
 
 void MainGame::initLevel()
@@ -61,7 +67,7 @@ void MainGame::initLevel()
 	std::uniform_int_distribution<int> rand_x(1, m_current_level->getWidth()-2);
 	std::uniform_int_distribution<int> rand_y(1, m_current_level->getHeight()-2);
 
-	constexpr float HUMAN_SPEED{ 1.0f };
+
 
 	// add random humans
 	for (int i{ 0 }; i < m_current_level->getNumHumans(); i++)
@@ -69,6 +75,15 @@ void MainGame::initLevel()
 		m_humans.push_back(new Human{});
 		glm::vec2 pos(rand_x(random_engine), rand_y(random_engine));
 		m_humans.back()->init(HUMAN_SPEED, pos * static_cast<float>(TILE_WIDTH));
+	}
+
+	// add zombies
+	const std::vector<glm::vec2>& zombie_positions{ m_current_level->getZombieStartPositions() };
+	for (int i{ 0 }; i < zombie_positions.size(); i++)
+	{
+		m_zombies.push_back(new Zombie{});
+		m_zombies.back()->init(ZOMBIE_SPEED, zombie_positions[i]);
+		
 	}
 }
 
@@ -88,12 +103,12 @@ void MainGame::gameLoop()
 	//int total_frames{ 0 };
 	//int FPS_PRINT_FREQ{ 60 };
 
-	//TRXEngine::FpsLimiter fps_limiter{};
-	//fps_limiter.setMaxFPS(1000.0f);
+	TRXEngine::FpsLimiter fps_limiter{};
+	fps_limiter.setMaxFPS(1000.0f);
 
 	while (m_game_state == GAME_STATE::PLAY)
 	{
-		//fps_limiter.begin();
+		fps_limiter.begin();
 
 		processInput();
 
@@ -106,7 +121,7 @@ void MainGame::gameLoop()
 
 		drawGame();
 
-		//m_fps = fps_limiter.end();
+		m_fps = fps_limiter.end();
 
 		// print fps ever FPS_PRINT_FREQ frames
 		//if (total_frames % FPS_PRINT_FREQ == 0)
@@ -130,7 +145,54 @@ void MainGame::updateAgents()
 		human->update(m_current_level->getLevelData(),m_humans,m_zombies);
 	}
 
-	// dont forget to update zombies
+	// update zombies
+	for (Zombie* zombie : m_zombies)
+	{
+		zombie->update(m_current_level->getLevelData(), m_humans, m_zombies);
+	}
+
+	// update zombie collis9ions
+	for (int i{ 0 }; i < m_zombies.size(); i++)
+	{
+		// collide with other zombies
+		for (int j{ i + 1 }; j < m_zombies.size(); j++)
+		{
+			m_zombies[i]->collideWithAgent(*m_zombies[j]);
+		}
+		// collide with other humans
+		for (int j{ 1 }; j < m_humans.size(); j++)
+		{
+			if (m_zombies[i]->collideWithAgent(*m_humans[j]))
+			{
+				// add new zombie
+				m_zombies.push_back(new Zombie{});
+				m_zombies.back()->init(ZOMBIE_SPEED,m_humans[j]->getPosition());
+				// delete the human
+				delete m_humans[j];
+				m_humans[j] = m_humans.back();
+				m_humans.pop_back();
+			}
+		}
+
+		// collide with player
+
+		if (m_zombies[i]->collideWithAgent(*m_player))
+		{
+			TRXEngine::fatalError("YOU LOSE");
+
+		}
+	}
+
+	// update human collis9ions
+	for (int i{ 0 }; i < m_humans.size(); i++)
+	{
+		// collide with other humans
+		for (int j{ i + 1 }; j < m_humans.size(); j++)
+		{
+			m_humans[i]->collideWithAgent(*m_humans[j]);
+		}
+	}
+
 }
 
 void MainGame::processInput()
@@ -184,15 +246,21 @@ void MainGame::drawGame()
 	GLint p_uniform{ m_texture_program.getUniformLocation("P") };
 	glUniformMatrix4fv(p_uniform, 1, GL_FALSE, &projection_matrix[0][0]);
 
-	m_current_level->draw();
-
-	m_agent_sprite_batch.begin();
+	m_sprite_batch.begin();
 	for (Human* human : m_humans)
 	{
-		human->draw(m_agent_sprite_batch);
+		human->draw(m_sprite_batch);
 	}
-	m_agent_sprite_batch.end();
-	m_agent_sprite_batch.renderBatch();
+
+	for (Zombie* zombie : m_zombies)
+	{
+		zombie->draw(m_sprite_batch);
+	}
+
+	m_current_level->draw(m_sprite_batch);
+
+	m_sprite_batch.end();
+	m_sprite_batch.renderBatch();
 
 	m_texture_program.unuse();
 

@@ -8,7 +8,8 @@
 #include <random>
 
 Human::Human()
-	:m_direction{0}
+	:m_direction{ 0 },
+	m_frames{ 0 }
 {
 }
 
@@ -39,11 +40,23 @@ void Human::init(float speed, glm::vec2 pos)
 void Human::update( const std::vector<std::string>& level_data, [[maybe_unused]] std::vector<Human*> humans, [[maybe_unused]] std::vector<Zombie*> zombies)
 {
 	static std::mt19937 random_engine{ static_cast<unsigned int>(time(nullptr)) };
-	static std::uniform_real_distribution<float> rand_rotate(-0.1f, 0.1f);
+	static std::uniform_real_distribution<float> rand_rotate(-1.0f, 1.0f);
 
 	m_position += m_direction * m_speed;
 	
-	m_direction = glm::rotate(m_direction, rand_rotate(random_engine));
-
-	collideWithLevel(level_data);
+	// randomly change direction every 20 frames
+	if (m_frames == 20)
+	{
+		m_direction = glm::rotate(m_direction, rand_rotate(random_engine));
+		m_frames = 0;
+	}
+	else
+	{
+		m_frames++;
+	}
+	
+	if (collideWithLevel(level_data))
+	{
+		m_direction = glm::rotate(m_direction, rand_rotate(random_engine));
+	}
 }

@@ -7,7 +7,9 @@
 #include <vector>
 #include <string>
 
-const float AGENT_WIDTH{ 60 };
+const float AGENT_WIDTH{ 60.0f };
+const float AGENT_RADIUS{ static_cast<float>(AGENT_WIDTH) / 2.0f };
+
 
 // forward declaration so that header files are not included which could result in circular includes
 class Zombie;
@@ -23,7 +25,9 @@ public:
 						std::vector<Human*> humans,
 						std::vector<Zombie*> zombies) = 0;
 
-	void collideWithLevel(const std::vector<std::string>& level_data);
+	bool collideWithLevel(const std::vector<std::string>& level_data);
+
+	bool collideWithAgent(Agent& agent);
 
 	// draws agent
 	void draw(TRXEngine::SpriteBatch& sprite_batch) const;

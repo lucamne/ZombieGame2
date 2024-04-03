@@ -13,7 +13,7 @@ Agent::~Agent()
 {
 }
 
-void Agent::collideWithLevel(const std::vector<std::string>& level_data)
+bool Agent::collideWithLevel(const std::vector<std::string>& level_data)
 {
 	std::vector<glm::vec2> collide_tile_positions{};
 
@@ -31,6 +31,35 @@ void Agent::collideWithLevel(const std::vector<std::string>& level_data)
 	{
 		collideWithTile(collide_tile_positions[i]);
 	}
+
+	return !(collide_tile_positions.size() == 0);
+}
+
+bool Agent::collideWithAgent(Agent& agent)
+{
+	const float MIN_DISTANCE{ 2 * AGENT_RADIUS };
+
+	glm::vec2 center_pos_a{ m_position + glm::vec2(AGENT_RADIUS) };
+	glm::vec2 center_pos_b{ agent.getPosition() + glm::vec2(AGENT_RADIUS) };
+
+	glm::vec2 dist_vec{ center_pos_a - center_pos_b };
+
+	float distance{ glm::length(dist_vec) };
+
+	float collision_depth{ MIN_DISTANCE - distance };
+
+	// if distance is smaller than MIN_DISTANCE then we have a collision
+	if (collision_depth > 0)
+	{
+
+		glm::vec2 collision_depth_vec{ glm::normalize(dist_vec) * collision_depth };
+
+		m_position += collision_depth_vec / 2.0f;
+		agent.m_position -= collision_depth_vec / 2.0f;
+		return true;
+	}
+	return false;
+
 }
 
 void Agent::draw(TRXEngine::SpriteBatch& sprite_batch) const
@@ -66,7 +95,6 @@ void Agent::checkTilePosition(const std::vector<std::string>& level_data, std::v
 // AABB collision
 void Agent::collideWithTile(glm::vec2 tile_position)
 {
-	const float AGENT_RADIUS{ static_cast<float>(AGENT_WIDTH) / 2.0f };
 	const float TILE_RADIUS{ static_cast<float>(TILE_WIDTH) / 2.0f };
 	const float MIN_DISTANCE{ AGENT_RADIUS + TILE_RADIUS };
 
