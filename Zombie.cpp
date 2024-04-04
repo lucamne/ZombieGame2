@@ -11,14 +11,15 @@ Zombie::~Zombie()
 
 void Zombie::init(float speed, glm::vec2 pos)
 {
+	m_health = 150.0f;
 	m_speed = speed;
 	m_position = pos;
 	m_color = { 0,160,0,255 };
 }
 
-void Zombie::update([[maybe_unused]]const std::vector<std::string>& level_data,
-	[[maybe_unused]] std::vector<Human*> humans,
-	[[maybe_unused]] std::vector<Zombie*> zombies)
+void Zombie::update(const std::vector<std::string>& level_data,
+	std::vector<Human*>& humans,
+	[[maybe_unused]] std::vector<Zombie*>& zombies)
 {
 	Human* closest_human{ getNearestHuman(humans) };
 

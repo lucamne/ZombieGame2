@@ -1,5 +1,6 @@
 #include "MainGame.h"
 #include "Zombie.h"
+#include "Gun.h"
 
 #include <TRXEngine/TRXEngine.h>
 #include <TRXEngine/Timing.h>
@@ -16,7 +17,9 @@ MainGame::MainGame()
 	:m_screen_width{ 1024 },
 	m_screen_height{768},
 	m_fps{ 0 },
-	m_player{nullptr}
+	m_player{nullptr},
+	m_humans_killed{0},
+	m_zombies_killed{0}
 {
 }
 
@@ -26,6 +29,7 @@ MainGame::~MainGame()
 	{
 		delete m_levels[i];
 	}
+
 }
 
 void MainGame::run()
@@ -59,7 +63,7 @@ void MainGame::initLevel()
 	m_current_level = m_levels.back();
 
 	m_player = new Player();
-	m_player->init(4.0f, m_current_level->getPlayerStartPosition(),&m_input_manager);
+	m_player->init(4.0f, m_current_level->getPlayerStartPosition(),&m_input_manager,&m_camera,&m_bullets);
 
 	m_humans.push_back(m_player);
 
@@ -85,6 +89,12 @@ void MainGame::initLevel()
 		m_zombies.back()->init(ZOMBIE_SPEED, zombie_positions[i]);
 		
 	}
+
+	// add guns
+	m_player->addGun(new Gun("Magnum", 10, 1, 0.1f, 30.0f, 20.0f));
+	m_player->addGun(new Gun("Shotgun", 30, 20, 0.4f, 30.0f, 20.0f));
+	m_player->addGun(new Gun("MP5", 2, 1, 0.2f, 30.0f, 20.0f));
+
 }
 
 void MainGame::initShaders()
@@ -110,10 +120,13 @@ void MainGame::gameLoop()
 	{
 		fps_limiter.begin();
 
+		checkVictory();
+
 		processInput();
 
 		updateAgents();
 
+		updateBullets();
 		// update camera position
 		m_camera.setPosition(m_player->getPosition());
 		m_camera.update();
@@ -195,6 +208,107 @@ void MainGame::updateAgents()
 
 }
 
+void MainGame::updateBullets()
+{
+	// update and collide with world
+	for (int i{0}; i < m_bullets.size();)
+	{
+		// if bullet collided with a wall
+		if (m_bullets[i].update(m_current_level->getLevelData()))
+		{
+			m_bullets[i] = m_bullets.back();
+			m_bullets.pop_back();
+		}
+		else
+		{
+			i++;
+		}
+	}
+
+	bool was_bullet_removed{ false };
+
+	// collide with humans and zombies
+	for (int i{ 0 }; i < m_bullets.size(); i++)
+	{
+		was_bullet_removed = false;
+		// check for collision with zombies
+		for (int j{ 0 }; j < m_zombies.size();)
+		{
+			// if bullet collides with zombie damage it and kill it if it is out of health
+			if (m_bullets[i].collideWithAgent(*m_zombies[j]))
+			{
+				if (m_zombies[j]->applyDamage(m_bullets[i].getDamage()))
+				{
+					delete m_zombies[j];
+					m_zombies[j] = m_zombies.back();
+					m_zombies.pop_back();
+
+					m_zombies_killed++;
+				}
+				else
+				{
+					j++;
+				}
+
+				m_bullets[i] = m_bullets.back();
+				m_bullets.pop_back();
+				was_bullet_removed = true;
+				break;
+			}
+			else
+			{
+				j++;
+			}
+		}
+		// if bullet was removed no need to check collision with humans
+		if (was_bullet_removed) continue;
+
+		// check for collision with humans
+		// start at 1 to exclude player from collision
+		for (int j{ 1 }; j < m_humans.size();)
+		{
+			// if bullet collides with human damage it and kill it if it is out of health
+			if (m_bullets[i].collideWithAgent(*m_humans[j]))
+			{
+				if (m_humans[j]->applyDamage(m_bullets[i].getDamage()))
+				{
+					delete m_humans[j];
+					m_humans[j] = m_humans.back();
+					m_humans.pop_back();
+
+					m_humans_killed++;
+				}
+				else
+				{
+					j++;
+				}
+
+				m_bullets[i] = m_bullets.back();
+				m_bullets.pop_back();
+				break;
+			}
+			else
+			{
+				j++;
+			}
+		}
+	}
+}
+
+void MainGame::checkVictory()
+{
+	// TODO: support for more levels
+	// if zombies are dead we win
+	if (m_zombies.size() == 0)
+	{
+
+		std::printf("*** You Win! ***\nYou killed %d civilians and %d zombies. There are %zd/%d civilians remaining",m_humans_killed,m_zombies_killed, m_humans.size()-1, m_current_level->getNumHumans());
+
+		TRXEngine::fatalError("");
+
+	}
+}
+
 void MainGame::processInput()
 {
 	SDL_Event evnt{};
@@ -255,6 +369,11 @@ void MainGame::drawGame()
 	for (Zombie* zombie : m_zombies)
 	{
 		zombie->draw(m_sprite_batch);
+	}
+
+	for (Bullet bullet : m_bullets)
+	{
+		bullet.draw(m_sprite_batch);
 	}
 
 	m_current_level->draw(m_sprite_batch);

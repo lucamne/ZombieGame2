@@ -22,12 +22,14 @@ public:
 	virtual ~Agent();
 
 	virtual void update(const std::vector<std::string>& level_data,
-						std::vector<Human*> humans,
-						std::vector<Zombie*> zombies) = 0;
+						std::vector<Human*>& humans,
+						std::vector<Zombie*>& zombies) = 0;
 
 	bool collideWithLevel(const std::vector<std::string>& level_data);
 
 	bool collideWithAgent(Agent& agent);
+	// returns true if agent died
+	bool applyDamage(float damage);
 
 	// draws agent
 	void draw(TRXEngine::SpriteBatch& sprite_batch) const;
@@ -43,5 +45,6 @@ protected:
 	glm::vec2 m_position{};
 	TRXEngine::Color m_color{};
 	float m_speed{};
+	float m_health{};
 };
 

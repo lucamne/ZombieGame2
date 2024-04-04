@@ -23,6 +23,7 @@ void Human::init(float speed, glm::vec2 pos)
 	static std::mt19937 random_engine{ static_cast<unsigned int>(time(nullptr)) };
 	static std::uniform_real_distribution<float> dist(-1.0f,1.0f);
 
+	m_health = 20;
 	m_color = { 255,0,0,255 };
 	m_speed = speed;
 	m_position = pos;
@@ -37,7 +38,7 @@ void Human::init(float speed, glm::vec2 pos)
 	m_direction = glm::normalize(m_direction);
 }
 
-void Human::update( const std::vector<std::string>& level_data, [[maybe_unused]] std::vector<Human*> humans, [[maybe_unused]] std::vector<Zombie*> zombies)
+void Human::update( const std::vector<std::string>& level_data, [[maybe_unused]] std::vector<Human*>& humans, [[maybe_unused]] std::vector<Zombie*>& zombies)
 {
 	static std::mt19937 random_engine{ static_cast<unsigned int>(time(nullptr)) };
 	static std::uniform_real_distribution<float> rand_rotate(-1.0f, 1.0f);

@@ -62,6 +62,12 @@ bool Agent::collideWithAgent(Agent& agent)
 
 }
 
+bool Agent::applyDamage(float damage)
+{
+	m_health -= damage;
+	return m_health <= 0.0f;
+}
+
 void Agent::draw(TRXEngine::SpriteBatch& sprite_batch) const
 {
 	static GLuint texture_id{ TRXEngine::ResourceManager::getTexture("Textures/jimmy_jump/PNG/CharacterLeft_Standing.png").id };
